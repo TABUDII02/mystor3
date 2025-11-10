@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Product Management</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body class="admin-body">
+
+    <header class="main-header admin-header">
+        <div class="logo">MyStore Admin <i class="fas fa-tools"></i></div>
+        <nav class="main-nav">
+            <a href="index.html">View Store</a>
+            <button id="logout-admin-btn" class="logout-btn">Log Out</button>
+        </nav>
+    </header>
+
+    <main class="admin-wrapper">
+        <div class="container">
+
+            <section class="admin-header-controls">
+                <h2>Product Inventory Management</h2>
+                <p>Use this dashboard to manage product listings, pricing, and stock levels.</p>
+                <button id="show-add-product-form-btn" class="primary-btn add-new-btn">
+                    <i class="fas fa-plus"></i> Add New Product
+                </button>
+            </section>
+
+            <section id="product-form-container" class="product-form-section" style="display:none;">
+                <h3 id="form-title">Add New Product</h3>
+                <form id="product-form" class="admin-form">
+                    <input type="hidden" id="product-id" name="id" value=""> 
+
+                    <div class="form-group">
+                        <label for="product-name">Product Name</label>
+                        <input type="text" id="product-name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="product-image">Image URL</label>
+                        <input type="text" id="product-image" name="image" placeholder="e.g., product-1.jpg or a full URL" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product-description">Description</label>
+                        <textarea id="product-description" name="description" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="product-price">Price ($)</label>
+                            <input type="number" id="product-price" name="price" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-stock">Stock Quantity</label>
+                            <input type="number" id="product-stock" name="stock" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn save-btn">Save Product</button>
+                        <button type="button" id="cancel-form-btn" class="secondary-btn cancel-btn">Cancel</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="product-list-section">
+                <h3>Current Listings</h3>
+                <div id="products-list-container" class="product-grid admin-mode">
+                </div>
+            </section>
+            
+            <hr>
+            <section class="customer-list-section">
+                <div id="customer-list-container">
+                    </div>
+            </section>
+            </div>
+    </main>
+
+    <script src="admin.js"></script> 
+</body>
+</html>

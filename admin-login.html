@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Access</title>
+    <link rel="stylesheet" href="admin-style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body class="auth-body">
+
+    <header class="main-header">
+        <div class="logo">MyStore <i class="fas fa-shopping-bag"></i></div>
+        <nav class="main-nav">
+            <a href="index.html">Products</a>
+            <a href="auth.html">Customer Login</a>
+        </nav>
+    </header>
+
+    <main class="auth-wrapper">
+        <div class="auth-container">
+            
+            <div id="admin-login-panel" class="auth-panel admin-panel">
+                <h2 class="form-title">Administrator Access</h2>
+                <p class="subtitle">Enter admin credentials to access the dashboard.</p>
+                <form id="admin-login-form">
+                    
+                    <div class="form-group">
+                        <label for="admin-email">Admin Email</label>
+                        <input type="email" id="admin-email" name="email" required placeholder="admin@mystore.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admin-password">Admin Password</label>
+                        <input type="password" id="admin-password" name="password" required placeholder="••••••••">
+                    </div>
+                    
+                   <button type="submit" class="primary-btn admin-btn"  id="admin-login-btn" style="background-color: #f44336;">Log In as Admin</button>
+                    
+                    <p id="login-error" style="color: #f44336; margin-top: 15px; font-weight: 600; display: none;"></p>
+                
+                    <div class="form-footer">
+                        <a href="auth.html" class="toggle-link">Back to Customer Login</a>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="auth-callout">
+                <h3><i class="fas fa-tools"></i> Admin Tools</h3>
+                <ul>
+                    <li>**Manage Inventory**</li>
+                    <li>**View Customer Orders**</li>
+                    <li>**Update User Records**</li>
+                </ul>
+            </div>
+
+        </div>
+    </main>
+        <script src="admin.js"></script> 
+</body>
+</html>

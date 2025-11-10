@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyStore | Your Tech & Lifestyle Destination</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="navigation.js" defer></script>
+    <script src="cart.js" defer></script>
+    <script src="admin.js" defer></script> 
+</head>
+<body>
+
+    <header>
+        <div class="logo">MyStore 🚀</div>
+        <nav>
+            <a href="#products">Products</a>
+            <a href="#about-us">About Us</a>
+            <a href="#contact-us">Contact Us</a>
+            <a href="auth.html" class="nav-account">Account / Login</a>
+            <a href="cart.html" class="nav-cart">Cart 🛒</a>
+        </nav>
+    </header>
+
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Discover the Latest Tech, Designed for You.</h1>
+            <p>From cutting-edge gadgets to essential accessories—find everything you need in one place.</p>
+            <a href="#products" class="cta-button">Shop Now!</a>
+        </div>
+    </section>
+
+    <main id="products" class="product-grid">
+        <h2>Loading Products...</h2>
+        <p>If you don't see products, please check your `admin.js` script and `localStorage`.</p>
+    </main>
+    
+    <section id="about-us" class="info-section">
+        <h2>💡 About MyStore</h2>
+        <div class="info-content">
+            <p><strong>Our Mission:</strong> We believe in connecting people with the best technology that enhances daily life. MyStore was founded in 2025 with a simple goal: to be your trusted source for high-quality, innovative gadgets and accessories.</p>
+            <p>Every product in our catalog is hand-picked and tested for **quality, reliability, and value**. We are passionate about tech and committed to providing an exceptional shopping experience. Thank you for choosing us!</p>
+        </div>
+    </section>
+    
+    <section id="contact-us" class="info-section">
+        <h2>📧 Contact Us</h2>
+        <div class="info-content">
+            <p>Have a question about an order, a product, or just want to say hello? We're here to help!</p>
+            <p>
+                **Email:** <a href="mailto:support@mystore.com">support@mystore.com</a><br>
+                **Phone:** (555) 123-4567<br>
+                **Address:** 123 Tech Lane, Innovation City, 90210
+            </p>
+            <form class="contact-form">
+                <input type="text" placeholder="Your Name" required>
+                <input type="email" placeholder="Your Email" required>
+                <textarea placeholder="Your Message" rows="5" required></textarea>
+                <button type="submit">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 MyStore. All rights reserved.</p>
+        <div class="footer-links">
+             <a href="#about-us">About</a> | <a href="#contact-us">Contact</a> | <a href="#">Terms</a>
+        </div>
+    </footer>
+
+</body>
+</html>

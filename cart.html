@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyStore | Your Shopping Cart</title>
+    <link rel="stylesheet" href="styler.css"> 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div class="logo">MyStore 🚀</div>
+        <nav>
+            <a href="index.html#products">Products</a> 
+            <a href="index.html#about-us">About Us</a>
+            <a href="index.html#contact-us">Contact Us</a>
+            <a href="auth.html" class="nav-account">Account / Login</a>
+            <a href="#" class="nav-cart">Cart (0) 🛒</a>
+        </nav>
+    </header>
+
+    <main class="cart-page">
+        <h2>🛍️ Your Shopping Cart</h2>
+
+        <div class="cart-container">
+            <section class="cart-items-list">
+                </section>
+            
+            <aside class="cart-summary">
+                <h3>Order Summary</h3>
+                <div class="summary-line">
+                    <span>Subtotal:</span>
+                    <span class="summary-value">$0.00</span> 
+                </div>
+                <div class="summary-line">
+                    <span>Shipping:</span>
+                    <span class="summary-value">$7.99</span>
+                </div>
+                <div class="summary-line tax-line">
+                    <span>Estimated Tax:</span>
+                    <span class="summary-value">$0.00</span>
+                </div>
+                <div class="summary-line total-line">
+                    <span class="total-text">Order Total:</span>
+                    <span class="total-value">$7.99</span> </div>
+                
+                <button class="checkout-button">Proceed to Checkout</button>
+                <a href="index.html#products" class="continue-shopping">← Continue Shopping</a>
+            </aside>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 MyStore. All rights reserved.</p>
+        <div class="footer-links">
+             <a href="index.html#about-us">About</a> | <a href="index.html#contact-us">Contact</a> | <a href="#">Terms</a>
+        </div>
+    </footer>
+    
+    <script src="cart.js"></script> 
+</body>
+</html>
