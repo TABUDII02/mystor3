@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function apiRequest(endpoint, data) {
         try {
             // Concatenates to: https://[backend].onrender.com/api/register (or /login)
-            const response = await fetch(`${API_BASE_URL}/${endpoint}`, { 
+            const response = await fetch(`${API_BASE_URL}/api/${endpoint}`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             config.body = JSON.stringify(data);
         }
 
-        const response = await fetch(`${API_BASE_URL}/${endpoint}`, config);
+        const response = await fetch(`${API_BASE_URL}/api/${endpoint}`, config);
         const result = await response.json();
 
         if (!response.ok) {
@@ -236,3 +236,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // CRITICAL: Call the function to check the URL and set the initial view
     checkInitialMode();
 });
+
