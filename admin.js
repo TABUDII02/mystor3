@@ -21,7 +21,7 @@ const AUTH_PAGE_NAME = 'auth.html';
 const CURRENT_PAGE_NAME = window.location.pathname.split('/').pop() || STORE_PAGE_NAME; 
 
 // Helper function to get the correct path for redirection
-const getAdminDashboardPath = () => window.location.pathname.includes('/client/') ? ADMIN_DASHBOARD_PAGE_NAME : `/client/${ADMIN_DASHBOARD_PAGE_NAME}`;
+const getAdminDashboardPath = () => `/${ADMIN_DASHBOARD_PAGE_NAME}`;
 const getStorePagePath = () => `/${STORE_PAGE_NAME}`; 
 const getAuthPagePath = () => `/${AUTH_PAGE_NAME}`; 
 const getAdminLoginPagePath = () => `/${ADMIN_LOGIN_PAGE_NAME}`; 
@@ -466,4 +466,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
 
