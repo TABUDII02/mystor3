@@ -5,11 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const registerPanel = document.getElementById('register-panel');
     const loginPanel = document.getElementById('login-panel');
-    const adminLoginPanel = document.getElementById('admin-login-panel'); // 🛑 NEW: Admin Panel
+    const adminLoginPanel = document.getElementById('admin-login-panel');
     
     const showLogin = document.getElementById('show-login');
     const showRegister = document.getElementById('show-register');
-    // Note: The admin toggle links are handled separately below
 
     /**
      * Toggles the visibility of the customer register and login forms, 
@@ -25,19 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target === 'login') {
             registerPanel.classList.remove('active-form');
             loginPanel.classList.add('active-form');
-            // Ensure login panel is visible if using inline styles
             loginPanel.style.display = 'block'; 
             registerPanel.style.display = 'none';
         } else if (target === 'register') {
             loginPanel.classList.remove('active-form');
             registerPanel.classList.add('active-form');
-            // Ensure register panel is visible if using inline styles
             registerPanel.style.display = 'block'; 
             loginPanel.style.display = 'none';
         }
     }
     
-    // 🛑 NEW: Logic to show the Admin Login Panel
+    // Logic to show the Admin Login Panel
     function showAdminLogin() {
         if (adminLoginPanel) {
             // Hide customer forms
@@ -52,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // 🛑 NEW: Logic to check URL for initial mode
+    // Logic to check URL for initial mode
     function checkInitialMode() {
         const urlParams = new URLSearchParams(window.location.search);
         
@@ -60,8 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (urlParams.get('mode') === 'admin') {
             showAdminLogin();
         } else {
-            // If no admin mode, ensure customer panels are correctly initialized
-            // We assume the HTML starts with 'register-panel' having 'active-form'
+            // Default to 'register' view
             toggleCustomerForm('register'); 
         }
     }
@@ -81,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // 🛑 NEW: Listener to switch back from Admin to Customer Login
+    // Listener to switch back from Admin to Customer Login
     const backToCustomerLink = document.getElementById('show-customer-login');
     if (backToCustomerLink) {
         backToCustomerLink.addEventListener('click', (e) => {
@@ -92,11 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================
-    // B. API HANDLER LOGIC (UNCHANGED)
+    // B. API HANDLER LOGIC
     // =========================================================
     
     // --- Configuration ---
-    const API_BASE_URL = 'http://localhost:5000/api'; 
+    // ⚠️ CRITICAL FIX: Use your Render Backend URL, MUST USE HTTPS!
+    // REPLACE THIS WITH YOUR RENDER BACKEND PUBLIC URL + /api
+    const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com'; 
     
     // --- Get Form Elements ---
     const registrationForm = document.getElementById('registration-form');
@@ -110,7 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function apiRequest(endpoint, data) {
         try {
-            const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+            // Concatenates to: https://[backend].onrender.com/api/register (or /login)
+            const response = await fetch(`${API_BASE_URL}/${endpoint}`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -234,6 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // 🛑 CRITICAL: Call the function to check the URL and set the initial view
+    // CRITICAL: Call the function to check the URL and set the initial view
     checkInitialMode();
 });
