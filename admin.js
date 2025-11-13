@@ -5,8 +5,8 @@
 const ADMIN_MODE_KEY = 'isAdminMode';
 const ADMIN_TOKEN_KEY = 'adminAuthToken'; 
 
-// Replace the hardcoded line with this:
-const API_BASE_URL = 'https://mongodb-crud-api-production-5139.up.railway.app';
+// Backend API endpoints (Unchanged - these are correct)
+const API_BASE_URL = 'http://localhost:5000';
 const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`; 
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
 const PRODUCTS_API_URL = `${API_BASE_URL}/api/products`; 
@@ -465,8 +465,4 @@ document.addEventListener('DOMContentLoaded', () => {
             productForm.addEventListener('submit', handleFormSubmit); 
         }
     }
-
 });
-
-
-
