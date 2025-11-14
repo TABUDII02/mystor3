@@ -5,13 +5,12 @@
 const ADMIN_MODE_KEY = 'isAdminMode';
 const ADMIN_TOKEN_KEY = 'adminAuthToken'; 
 
-// Backend API endpoints (UPDATED: Added Sales and Customer Delete API)
+// Backend API endpoints (UPDATED with your Render URL)
 const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com';
 const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`; 
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
 const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; // Assumes DELETE /api/users/:id
 const PRODUCTS_API_URL = `${API_BASE_URL}/api/products`; 
-// ⭐ NEW API ENDPOINT
 const SALES_REPORT_API = `${API_BASE_URL}/api/sales/report`; 
 
 
@@ -138,13 +137,16 @@ function createProductCardHTML(product, isAdmin = false) {
     const stockQuantity = parseInt(product.stock) || 0;
     const isOutOfStock = stockQuantity <= 0;
     let actionButtonHTML;
+    
+    // ⭐ ID FIX: Using product._id for MongoDB ID consistency
+    const productId = product._id || product.id; 
 
     if (isAdmin) {
         adminButtonsHTML = `
             <p class="stock-info">Stock: **${stockQuantity}**</p>
             <div class="admin-buttons">
-                <button class="edit-btn" data-id="${product.id}">✏️ Edit</button>
-                <button class="delete-btn" data-id="${product.id}">❌ Delete</button>
+                <button class="edit-btn" data-id="${productId}">✏️ Edit</button>
+                <button class="delete-btn" data-id="${productId}">❌ Delete</button>
             </div>
         `;
         actionButtonHTML = '<button disabled style="opacity: 0.7;">Add to Cart (Admin)</button>'; 
@@ -154,9 +156,9 @@ function createProductCardHTML(product, isAdmin = false) {
         } else {
             actionButtonHTML = `
                 <div class="cart-controls">
-                    <label for="qty-${product.id}">Qty:</label>
-                    <input type="number" id="qty-${product.id}" class="product-quantity" value="1" min="1" max="${stockQuantity > 0 ? stockQuantity : 1}" style="width: 50px; margin-right: 10px;">
-                    <button class="add-to-cart-btn" data-id="${product.id}">Add to Cart</button>
+                    <label for="qty-${productId}">Qty:</label>
+                    <input type="number" id="qty-${productId}" class="product-quantity" value="1" min="1" max="${stockQuantity > 0 ? stockQuantity : 1}" style="width: 50px; margin-right: 10px;">
+                    <button class="add-to-cart-btn" data-id="${productId}">Add to Cart</button>
                 </div>
             `;
         }
@@ -165,7 +167,7 @@ function createProductCardHTML(product, isAdmin = false) {
     const formattedPrice = `$${parseFloat(product.price).toFixed(2)}`;
 
     return `
-        <div class="product-card" data-product-id="${product.id}">
+        <div class="product-card" data-product-id="${productId}">
             <img src="${product.image}" alt="${product.name} Image">
             <div class="product-info">
                 <h3>${product.name}</h3>
@@ -191,15 +193,24 @@ async function fetchAndRenderProducts(isAdmin = false) {
         const response = await fetch(PRODUCTS_API_URL); 
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! Status: ${response.status}. Full URL: ${PRODUCTS_API_URL}`);
         }
         
-        const products = await response.json(); 
+        const data = await response.json(); 
+        
+        // ⭐ ROBUST PRODUCT ARRAY EXTRACTION ⭐
+        let products = [];
+        if (Array.isArray(data)) {
+            products = data;
+        } else if (typeof data === 'object' && data !== null) {
+            products = data.products || data.data || [];
+        }
         
         productGrid.innerHTML = isAdmin ? '' : '<h2>🔥 Top Picks & New Arrivals</h2>';
         
         if (products.length === 0) {
-            productGrid.innerHTML += '<p>No products found in the database.</p>';
+            productGrid.innerHTML += '<p>No products found in the database. Check your API response structure.</p>';
+            console.warn("API Response Data Structure Debug:", data);
             return;
         }
 
@@ -218,7 +229,7 @@ async function fetchAndRenderProducts(isAdmin = false) {
 
     } catch (error) {
         console.error("Failed to load products from API:", error);
-        productGrid.innerHTML = `<p class="error-message">Could not load products. Please ensure the backend is running. Error: ${error.message}</p>`;
+        productGrid.innerHTML = `<p class="error-message">Could not load products. Error: ${error.message}</p>`;
     }
 }
 
@@ -226,8 +237,11 @@ async function handleFormSubmit(e) {
     e.preventDefault();
 
     const formData = new FormData(productForm);
+    const productId = formData.get('id') || undefined;
+    
     const productData = {
-        id: formData.get('id') || undefined,
+        // Use '_id' if it exists, otherwise use 'id' from the form (if the form element is named 'id')
+        _id: productId, 
         name: formData.get('name'),
         image: formData.get('image'),
         description: formData.get('description'),
@@ -235,8 +249,8 @@ async function handleFormSubmit(e) {
         stock: parseInt(formData.get('stock'))
     };
 
-    const isEditing = !!productData.id;
-    const url = isEditing ? `${PRODUCTS_API_URL}/${productData.id}` : PRODUCTS_API_URL;
+    const isEditing = !!productId;
+    const url = isEditing ? `${PRODUCTS_API_URL}/${productId}` : PRODUCTS_API_URL;
     const method = isEditing ? 'PUT' : 'POST';
 
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -253,7 +267,8 @@ async function handleFormSubmit(e) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
-            body: JSON.stringify(productData)
+            // On the backend, you usually only need to send the data fields, not the _id field
+            body: JSON.stringify(productData) 
         });
 
         const data = await response.json();
@@ -275,6 +290,7 @@ async function handleFormSubmit(e) {
 
 /**
  * FIXED: Fetches the full product data from the server for accurate form population.
+ * Uses product ID passed via data-id attribute.
  */
 async function handleEditProduct(e) {
     const productId = e.target.dataset.id;
@@ -286,7 +302,7 @@ async function handleEditProduct(e) {
     }
 
     try {
-        // 1. Fetch the full, accurate product data from the API
+        // Use the ID fetched from the button's data attribute
         const response = await fetch(`${PRODUCTS_API_URL}/${productId}`, {
             method: 'GET',
             headers: {
@@ -302,7 +318,8 @@ async function handleEditProduct(e) {
         
         // 2. Populate the form fields with the fetched data
         formTitle.textContent = 'Edit Product';
-        document.getElementById('product-id').value = product.id;
+        // ⭐ ID FIX: Use the actual ID/ _id from the fetched product
+        document.getElementById('product-id').value = product._id || product.id;
         document.getElementById('product-name').value = product.name;
         document.getElementById('product-image').value = product.image;
         document.getElementById('product-description').value = product.description;
@@ -393,11 +410,14 @@ async function fetchCustomerList() {
         if (response.ok) {
             let html = '<h3>Registered Customers</h3>';
             
-            if (data.length === 0) {
+            // Assuming customer list is a direct array or nested under a property like 'users'
+            const users = Array.isArray(data) ? data : data.users || data.data || [];
+
+            if (users.length === 0) {
                 html += '<p>No customers registered yet.</p>';
             } else {
                 html += '<table class="customer-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Actions</th></tr></thead><tbody>';
-                data.forEach(user => {
+                users.forEach(user => {
                     html += `
                         <tr>
                             <td>${user._id.slice(-6)}</td>
@@ -488,6 +508,7 @@ async function fetchSalesReport() {
         const salesData = await response.json();
 
         if (response.ok) {
+            // Assuming sales data is an array
             if (salesData.length === 0) {
                 salesReportContainer.innerHTML = '<h4>No sales records found yet.</h4>';
                 return;
@@ -594,4 +615,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-
