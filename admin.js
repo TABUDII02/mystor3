@@ -1,15 +1,19 @@
 // admin.js
 
-// --- Core Constants and Page Configuration (FIXED) ---
+// --- Core Constants and Page Configuration (UPDATED) ---
 
 const ADMIN_MODE_KEY = 'isAdminMode';
 const ADMIN_TOKEN_KEY = 'adminAuthToken'; 
 
-// Backend API endpoints (Unchanged - these are correct)
-const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com';
+// Backend API endpoints (UPDATED: Added Sales and Customer Delete API)
+const API_BASE_URL = 'http://localhost:5000';
 const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`; 
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
+const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; // Assumes DELETE /api/users/:id
 const PRODUCTS_API_URL = `${API_BASE_URL}/api/products`; 
+// ⭐ NEW API ENDPOINT (Must be implemented on your backend)
+const SALES_REPORT_API = `${API_BASE_URL}/api/sales/report`; 
+
 
 // Define page paths using ONLY the filename for consistent comparison
 const STORE_PAGE_NAME = 'index.html';
@@ -81,7 +85,7 @@ async function fetchAndRenderProducts(isAdmin = false) {
 }
 
 
-// --- DOM References (FIXED: Simplified and based on correct filename comparison) ---
+// --- DOM References (UPDATED: Added sales container) ---
 let productGrid = null;
 
 if (CURRENT_PAGE_NAME === ADMIN_DASHBOARD_PAGE_NAME) {
@@ -103,9 +107,11 @@ const loginError = document.getElementById('login-error');
 const showLoginFormBtn = document.getElementById('show-login-form-btn');
 
 const customerListContainer = document.getElementById('customer-list-container');
+// ⭐ NEW DOM ELEMENT
+const salesReportContainer = document.getElementById('sales-report-container');
 
 
-// --- DOM Rendering & CRUD Functions (Unchanged) ---
+// --- DOM Rendering & CRUD Functions (Unchanged - excluding fetchCustomerList which is moved/updated below) ---
 function createProductCardHTML(product, isAdmin = false) {
     let adminButtonsHTML = '';
     const stockQuantity = parseInt(product.stock) || 0;
@@ -276,6 +282,9 @@ function hideProductForm() {
     productFormContainer.style.display = 'none';
 }
 
+
+// --- Customer Management (UPDATED to add delete button) ---
+
 async function fetchCustomerList() {
     if (!customerListContainer) return;
 
@@ -303,13 +312,25 @@ async function fetchCustomerList() {
             if (data.length === 0) {
                 html += '<p>No customers registered yet.</p>';
             } else {
-                html += '<table><thead><tr><th>ID</th><th>Name</th><th>Email</th></tr></thead><tbody>';
+                html += '<table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Actions</th></tr></thead><tbody>';
                 data.forEach(user => {
-                    html += `<tr><td>${user._id.slice(-6)}</td><td>${user.name}</td><td>${user.email}</td></tr>`;
+                    html += `
+                        <tr>
+                            <td>${user._id.slice(-6)}</td>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td><button class="primary-btn delete-customer-btn" data-id="${user._id}">Delete</button></td>
+                        </tr>
+                    `;
                 });
                 html += '</tbody></table>';
             }
             customerListContainer.innerHTML = html;
+            
+            // ⭐ ATTACH DELETE LISTENERS
+            document.querySelectorAll('.delete-customer-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteCustomer);
+            });
             
         } else {
             customerListContainer.innerHTML = `<h3>Customer List</h3><p class="error">Failed to fetch data: ${data.error || 'Server error.'}</p>`;
@@ -321,6 +342,100 @@ async function fetchCustomerList() {
         customerListContainer.innerHTML = '<h3>Customer List</h3><p class="error">Network error. Is the backend running?</p>';
     }
 }
+
+
+// ⭐ NEW FUNCTION: Handle Customer Deletion
+async function handleDeleteCustomer(e) {
+    const userId = e.target.dataset.id;
+    if (!confirm(`Are you sure you want to permanently delete customer ID: ${userId.slice(-6)}? This action cannot be undone.`)) {
+        return;
+    }
+
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    // Assumes the DELETE API endpoint is CUSTOMER_DELETE_API/:id
+    const url = `${CUSTOMER_DELETE_API}/${userId}`; 
+
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || `Server responded with status ${response.status}`);
+        }
+
+        alert(`Customer account '${userId.slice(-6)}' successfully deleted!`);
+        
+        // Refresh the customer list table
+        await fetchCustomerList(); 
+
+    } catch (error) {
+        console.error("Error deleting customer:", error);
+        alert(`Failed to delete customer: ${error.message}`);
+    }
+}
+
+// ⭐ NEW FUNCTION: Fetch and Render Sales Report
+async function fetchSalesReport() {
+    if (!salesReportContainer) return;
+
+    salesReportContainer.innerHTML = '<p>Loading sales data...</p>';
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+
+    if (!token) {
+        salesReportContainer.innerHTML = '<p class="error">Access token missing. Cannot load sales data.</p>';
+        return;
+    }
+
+    try {
+        // NOTE: This assumes your backend returns an array of sales records or a summary
+        const response = await fetch(SALES_REPORT_API, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const salesData = await response.json();
+
+        if (response.ok) {
+            if (salesData.length === 0) {
+                salesReportContainer.innerHTML = '<h4>No sales records found yet.</h4>';
+                return;
+            }
+
+            let tableHTML = '<table><thead><tr><th>Product ID</th><th>Name</th><th>Units Sold</th><th>Total Revenue ($)</th></tr></thead><tbody>';
+
+            salesData.forEach(item => {
+                // Adjust property names based on your actual backend response structure
+                const totalRevenue = parseFloat(item.totalRevenue || 0).toFixed(2);
+                
+                tableHTML += `
+                    <tr>
+                        <td>${item.productId?.slice(-6) || 'N/A'}</td>
+                        <td>${item.productName || 'Unknown Product'}</td>
+                        <td>${item.totalUnitsSold || 0}</td>
+                        <td>$${totalRevenue}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table>';
+            salesReportContainer.innerHTML = tableHTML;
+
+        } else {
+            salesReportContainer.innerHTML = `<p class="error">Failed to load sales data: ${salesData.error || 'Server error.'}</p>`;
+        }
+
+    } catch (error) {
+        console.error('Network Error fetching sales report:', error);
+        salesReportContainer.innerHTML = '<p class="error">Network error. Failed to connect to sales API.</p>';
+    }
+}
+
 
 function toggleAdminMode(enable, token = null) {
     if (enable && token) {
@@ -399,7 +514,7 @@ const handleAdminLogin = async (e) => {
 };
 
 
-// --- Initialization (FIXED) ---
+// --- Initialization (UPDATED to call new functions) ---
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -411,8 +526,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndRenderProducts(false); 
         
         if (showLoginFormBtn) {
-            showLoginFormBtn.href = isAdminLoggedIn ?  getAuthPagePath() : getAdminDashboardPath();
-            showLoginFormBtn.textContent = isAdminLoggedIn ?  'Account / Login' : 'Admin Dashboard 🛑';
+            showLoginFormBtn.href = isAdminLoggedIn ? getAuthPagePath() : getAdminDashboardPath();
+            showLoginFormBtn.textContent = isAdminLoggedIn ? 'Account / Login' : 'Admin Dashboard 🛑';
         }
     } 
     
@@ -444,8 +559,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // Fetch Admin Data
         fetchAndRenderProducts(true);
         fetchCustomerList();
+        fetchSalesReport(); // ⭐ CALL NEW SALES FUNCTION
 
         // Attach Logout listener
         const logoutBtn = document.getElementById('logout-admin-btn');
@@ -466,5 +583,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-
-
