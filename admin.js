@@ -9,8 +9,10 @@ const ADMIN_TOKEN_KEY = 'adminAuthToken';
 const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com';
 const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`; 
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
-const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; // Assumes DELETE /api/users/:id
+const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; 
 const PRODUCTS_API_URL = `${API_BASE_URL}/api/products`; 
+// ⭐ CRITICAL FIX: Dedicated API for Admin product listing
+const ADMIN_PRODUCTS_API_URL = `${API_BASE_URL}/api/admin/products`; 
 const SALES_REPORT_API = `${API_BASE_URL}/api/sales/report`; 
 
 
@@ -138,8 +140,8 @@ function createProductCardHTML(product, isAdmin = false) {
     const isOutOfStock = stockQuantity <= 0;
     let actionButtonHTML;
     
-    // ⭐ ID FIX: Using product._id for MongoDB ID consistency
-    const productId = product._id || product.id; 
+    // ⭐ ID FIX: Use product.id (the custom string ID) first, or fallback to product._id
+    const productId = product.id || product._id; 
 
     if (isAdmin) {
         adminButtonsHTML = `
@@ -186,14 +188,37 @@ async function fetchAndRenderProducts(isAdmin = false) {
         return; 
     }
 
-    productGrid.innerHTML = isAdmin ? '<p>Loading products...</p>' : '<h2>🔥 Top Picks & New Arrivals (Loading...)</h2>';
+    productGrid.innerHTML = isAdmin ? '<p>Loading products for Admin Dashboard...</p>' : '<h2>🔥 Top Picks & New Arrivals (Loading...)</h2>';
     productGrid.classList.toggle('admin-mode', isAdmin);
 
+    // ⭐ FIX: Determine URL and Headers based on isAdmin flag ⭐
+    let fetchUrl = PRODUCTS_API_URL;
+    const fetchHeaders = {};
+    
+    if (isAdmin) {
+        // Use the protected Admin route for the dashboard
+        fetchUrl = ADMIN_PRODUCTS_API_URL; 
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+
+        if (!token) {
+            productGrid.innerHTML = '<p class="error-message">Admin Token missing. Cannot fetch protected product list. Redirecting to login...</p>';
+            setTimeout(() => window.location.href = getAdminLoginPagePath(), 1000);
+            return;
+        }
+        
+        // Include Authorization header for the protected route
+        fetchHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
-        const response = await fetch(PRODUCTS_API_URL); 
+        const response = await fetch(fetchUrl, {
+            method: 'GET',
+            headers: fetchHeaders
+        }); 
         
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}. Full URL: ${PRODUCTS_API_URL}`);
+            const errorData = await response.json();
+            throw new Error(`HTTP error! Status: ${response.status}. Error: ${errorData.error || 'Unknown server error.'}`);
         }
         
         const data = await response.json(); 
@@ -209,8 +234,7 @@ async function fetchAndRenderProducts(isAdmin = false) {
         productGrid.innerHTML = isAdmin ? '' : '<h2>🔥 Top Picks & New Arrivals</h2>';
         
         if (products.length === 0) {
-            productGrid.innerHTML += '<p>No products found in the database. Check your API response structure.</p>';
-            console.warn("API Response Data Structure Debug:", data);
+            productGrid.innerHTML += '<p>No products found in the database. Add a new product via the form.</p>';
             return;
         }
 
@@ -237,11 +261,12 @@ async function handleFormSubmit(e) {
     e.preventDefault();
 
     const formData = new FormData(productForm);
-    const productId = formData.get('id') || undefined;
+    // Note: The backend uses the custom string 'id' for CRUD operations
+    const productId = formData.get('id') || undefined; 
     
+    // IMPORTANT: Send the custom 'id' field to the backend
     const productData = {
-        // Use '_id' if it exists, otherwise use 'id' from the form (if the form element is named 'id')
-        _id: productId, 
+        id: productId, // Send the custom string 'id'
         name: formData.get('name'),
         image: formData.get('image'),
         description: formData.get('description'),
@@ -249,6 +274,7 @@ async function handleFormSubmit(e) {
         stock: parseInt(formData.get('stock'))
     };
 
+    // The backend uses the custom string ID for the URL parameter
     const isEditing = !!productId;
     const url = isEditing ? `${PRODUCTS_API_URL}/${productId}` : PRODUCTS_API_URL;
     const method = isEditing ? 'PUT' : 'POST';
@@ -267,7 +293,6 @@ async function handleFormSubmit(e) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
-            // On the backend, you usually only need to send the data fields, not the _id field
             body: JSON.stringify(productData) 
         });
 
@@ -280,6 +305,7 @@ async function handleFormSubmit(e) {
         alert(`Product ${isEditing ? 'updated' : 'created'} successfully!`);
         hideProductForm();
         
+        // Refresh with admin list
         await fetchAndRenderProducts(true); 
 
     } catch (error) {
@@ -289,8 +315,7 @@ async function handleFormSubmit(e) {
 }
 
 /**
- * FIXED: Fetches the full product data from the server for accurate form population.
- * Uses product ID passed via data-id attribute.
+ * Fetches the full product data from the server for accurate form population.
  */
 async function handleEditProduct(e) {
     const productId = e.target.dataset.id;
@@ -302,10 +327,11 @@ async function handleEditProduct(e) {
     }
 
     try {
-        // Use the ID fetched from the button's data attribute
+        // Use the ID fetched from the button's data attribute (which is the custom string 'id')
         const response = await fetch(`${PRODUCTS_API_URL}/${productId}`, {
             method: 'GET',
             headers: {
+                // Pass token, even though /api/products/:id is public, we pass it so admin can see deleted ones.
                 'Authorization': `Bearer ${token}` 
             },
         });
@@ -318,8 +344,8 @@ async function handleEditProduct(e) {
         
         // 2. Populate the form fields with the fetched data
         formTitle.textContent = 'Edit Product';
-        // ⭐ ID FIX: Use the actual ID/ _id from the fetched product
-        document.getElementById('product-id').value = product._id || product.id;
+        // ⭐ Use the custom string ID for the form field value 
+        document.getElementById('product-id').value = product.id;
         document.getElementById('product-name').value = product.name;
         document.getElementById('product-image').value = product.image;
         document.getElementById('product-description').value = product.description;
@@ -339,7 +365,7 @@ async function handleEditProduct(e) {
 
 async function handleDeleteProduct(e) {
     const productId = e.target.dataset.id;
-    if (!confirm('Are you sure you want to move this product to trash?')) {
+    if (!confirm('Are you sure you want to move this product to trash (soft delete)?')) {
         return;
     }
 
@@ -418,6 +444,7 @@ async function fetchCustomerList() {
             } else {
                 html += '<table class="customer-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Actions</th></tr></thead><tbody>';
                 users.forEach(user => {
+                    // Use user._id for customer list as it's the standard MongoDB key
                     html += `
                         <tr>
                             <td>${user._id.slice(-6)}</td>
@@ -456,7 +483,7 @@ async function handleDeleteCustomer(e) {
     }
 
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-    // Assumes the DELETE API endpoint is CUSTOMER_DELETE_API/:id
+    // Assumes the DELETE API endpoint is CUSTOMER_DELETE_API/:id, which is correct for MongoDB _id
     const url = `${CUSTOMER_DELETE_API}/${userId}`; 
 
     try {
@@ -499,7 +526,6 @@ async function fetchSalesReport() {
     }
 
     try {
-        // NOTE: This assumes your backend returns an array of sales records or a summary
         const response = await fetch(SALES_REPORT_API, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -517,7 +543,6 @@ async function fetchSalesReport() {
             let tableHTML = '<table class="sales-table"><thead><tr><th>Product ID</th><th>Name</th><th>Units Sold</th><th>Total Revenue ($)</th></tr></thead><tbody>';
 
             salesData.forEach(item => {
-                // Adjust property names based on your actual backend response structure
                 const totalRevenue = parseFloat(item.totalRevenue || 0).toFixed(2);
                 
                 tableHTML += `
@@ -592,9 +617,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Fetch Admin Data
-        fetchAndRenderProducts(true);
+        fetchAndRenderProducts(true); // Now uses ADMIN_PRODUCTS_API_URL and token
         fetchCustomerList();
-        fetchSalesReport(); // ⭐ CALL NEW SALES FUNCTION
+        fetchSalesReport(); 
 
         // Attach Logout listener
         const logoutBtn = document.getElementById('logout-admin-btn');
