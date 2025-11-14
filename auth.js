@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
     // ⚠️ CRITICAL FIX: Use your Render Backend URL, MUST USE HTTPS!
     // REPLACE THIS WITH YOUR RENDER BACKEND PUBLIC URL + /api
-    const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com'; 
+    const API_BASE_URL = 'https://[YOUR_RENDER_BACKEND_NAME].onrender.com/api'; 
     
     // --- Get Form Elements ---
     const registrationForm = document.getElementById('registration-form');
@@ -236,4 +236,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // CRITICAL: Call the function to check the URL and set the initial view
     checkInitialMode();
 });
-
