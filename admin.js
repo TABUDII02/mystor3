@@ -11,7 +11,7 @@ const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`;
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
 const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; 
 const PRODUCTS_API_URL = `${API_BASE_URL}/api/products`; 
-// ⭐ CRITICAL FIX: Dedicated API for Admin product listing
+// ⭐ FIX: Dedicated API for Admin product listing
 const ADMIN_PRODUCTS_API_URL = `${API_BASE_URL}/api/admin/products`; 
 const SALES_REPORT_API = `${API_BASE_URL}/api/sales/report`; 
 
@@ -33,14 +33,10 @@ const getAdminLoginPagePath = () => `/${ADMIN_LOGIN_PAGE_NAME}`;
 
 
 // --- DOM References ---
-let productGrid = null;
+// ⭐ FIX 1: Removed initial productGrid global assignment to handle timing issues (see below)
+let productGrid = null; // Will be defined during DOMContentLoaded, but is null here.
 
-if (CURRENT_PAGE_NAME === ADMIN_DASHBOARD_PAGE_NAME) {
-    productGrid = document.getElementById('products-list-container');
-} else if (CURRENT_PAGE_NAME === STORE_PAGE_NAME || CURRENT_PAGE_NAME === '') {
-    productGrid = document.getElementById('products');
-}
-
+// These remain global references for non-product areas
 const productFormContainer = document.getElementById('product-form-container');
 const productForm = document.getElementById('product-form');
 const formTitle = document.getElementById('form-title');
@@ -61,7 +57,6 @@ function toggleAdminMode(enable, token = null) {
         localStorage.setItem(ADMIN_TOKEN_KEY, token);
         localStorage.removeItem(ADMIN_MODE_KEY); 
         
-        // FIXED REDIRECTION LOGIC
         if (CURRENT_PAGE_NAME === STORE_PAGE_NAME || CURRENT_PAGE_NAME === AUTH_PAGE_NAME || CURRENT_PAGE_NAME === ADMIN_LOGIN_PAGE_NAME || CURRENT_PAGE_NAME === '') {
             console.log("Admin login successful. Redirecting to dashboard.");
             window.location.href = getAdminDashboardPath(); 
@@ -140,7 +135,6 @@ function createProductCardHTML(product, isAdmin = false) {
     const isOutOfStock = stockQuantity <= 0;
     let actionButtonHTML;
     
-    // ⭐ ID FIX: Use product.id (the custom string ID) first, or fallback to product._id
     const productId = product.id || product._id; 
 
     if (isAdmin) {
@@ -182,14 +176,26 @@ function createProductCardHTML(product, isAdmin = false) {
     `;
 }
 
+// ⭐ FIX 2: Updated fetchAndRenderProducts to be self-healing and use the correct endpoint/auth
 async function fetchAndRenderProducts(isAdmin = false) {
-    if (!productGrid) {
-        console.warn(`Attempted to fetch products, but productGrid element was not found on page: ${CURRENT_PAGE_NAME}`);
+    let currentProductGrid = productGrid; // Use the global reference if set
+
+    // Safely look up the product grid element here if the global wasn't set earlier
+    if (!currentProductGrid) {
+        if (isAdmin) {
+            currentProductGrid = document.getElementById('products-list-container');
+        } else {
+            currentProductGrid = document.getElementById('products');
+        }
+    }
+
+    if (!currentProductGrid) {
+        console.error(`ERROR: Product grid element was not found for page: ${CURRENT_PAGE_NAME}. Check your HTML ID.`);
         return; 
     }
 
-    productGrid.innerHTML = isAdmin ? '<p>Loading products for Admin Dashboard...</p>' : '<h2>🔥 Top Picks & New Arrivals (Loading...)</h2>';
-    productGrid.classList.toggle('admin-mode', isAdmin);
+    currentProductGrid.innerHTML = isAdmin ? '<p>Loading products for Admin Dashboard...</p>' : '<h2>🔥 Top Picks & New Arrivals (Loading...)</h2>';
+    currentProductGrid.classList.toggle('admin-mode', isAdmin);
 
     // ⭐ FIX: Determine URL and Headers based on isAdmin flag ⭐
     let fetchUrl = PRODUCTS_API_URL;
@@ -201,7 +207,7 @@ async function fetchAndRenderProducts(isAdmin = false) {
         const token = localStorage.getItem(ADMIN_TOKEN_KEY);
 
         if (!token) {
-            productGrid.innerHTML = '<p class="error-message">Admin Token missing. Cannot fetch protected product list. Redirecting to login...</p>';
+            currentProductGrid.innerHTML = '<p class="error-message">Admin Token missing. Redirecting to login...</p>';
             setTimeout(() => window.location.href = getAdminLoginPagePath(), 1000);
             return;
         }
@@ -223,23 +229,18 @@ async function fetchAndRenderProducts(isAdmin = false) {
         
         const data = await response.json(); 
         
-        // ⭐ ROBUST PRODUCT ARRAY EXTRACTION ⭐
-        let products = [];
-        if (Array.isArray(data)) {
-            products = data;
-        } else if (typeof data === 'object' && data !== null) {
-            products = data.products || data.data || [];
-        }
+        // ROBUST PRODUCT ARRAY EXTRACTION
+        let products = Array.isArray(data) ? data : data.products || data.data || [];
         
-        productGrid.innerHTML = isAdmin ? '' : '<h2>🔥 Top Picks & New Arrivals</h2>';
+        currentProductGrid.innerHTML = isAdmin ? '' : '<h2>🔥 Top Picks & New Arrivals</h2>';
         
         if (products.length === 0) {
-            productGrid.innerHTML += '<p>No products found in the database. Add a new product via the form.</p>';
+            currentProductGrid.innerHTML += '<p>No products found in the database. Add a new product via the form.</p>';
             return;
         }
 
         products.forEach(product => {
-            productGrid.innerHTML += createProductCardHTML(product, isAdmin);
+            currentProductGrid.innerHTML += createProductCardHTML(product, isAdmin);
         });
 
         if (isAdmin) {
@@ -253,7 +254,7 @@ async function fetchAndRenderProducts(isAdmin = false) {
 
     } catch (error) {
         console.error("Failed to load products from API:", error);
-        productGrid.innerHTML = `<p class="error-message">Could not load products. Error: ${error.message}</p>`;
+        currentProductGrid.innerHTML = `<p class="error-message">Could not load products. Error: ${error.message}</p>`;
     }
 }
 
@@ -261,10 +262,8 @@ async function handleFormSubmit(e) {
     e.preventDefault();
 
     const formData = new FormData(productForm);
-    // Note: The backend uses the custom string 'id' for CRUD operations
     const productId = formData.get('id') || undefined; 
     
-    // IMPORTANT: Send the custom 'id' field to the backend
     const productData = {
         id: productId, // Send the custom string 'id'
         name: formData.get('name'),
@@ -274,7 +273,6 @@ async function handleFormSubmit(e) {
         stock: parseInt(formData.get('stock'))
     };
 
-    // The backend uses the custom string ID for the URL parameter
     const isEditing = !!productId;
     const url = isEditing ? `${PRODUCTS_API_URL}/${productId}` : PRODUCTS_API_URL;
     const method = isEditing ? 'PUT' : 'POST';
@@ -305,7 +303,6 @@ async function handleFormSubmit(e) {
         alert(`Product ${isEditing ? 'updated' : 'created'} successfully!`);
         hideProductForm();
         
-        // Refresh with admin list
         await fetchAndRenderProducts(true); 
 
     } catch (error) {
@@ -314,9 +311,6 @@ async function handleFormSubmit(e) {
     }
 }
 
-/**
- * Fetches the full product data from the server for accurate form population.
- */
 async function handleEditProduct(e) {
     const productId = e.target.dataset.id;
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -327,11 +321,9 @@ async function handleEditProduct(e) {
     }
 
     try {
-        // Use the ID fetched from the button's data attribute (which is the custom string 'id')
         const response = await fetch(`${PRODUCTS_API_URL}/${productId}`, {
             method: 'GET',
             headers: {
-                // Pass token, even though /api/products/:id is public, we pass it so admin can see deleted ones.
                 'Authorization': `Bearer ${token}` 
             },
         });
@@ -342,9 +334,7 @@ async function handleEditProduct(e) {
             throw new Error(product.error || `Server responded with status ${response.status}`);
         }
         
-        // 2. Populate the form fields with the fetched data
         formTitle.textContent = 'Edit Product';
-        // ⭐ Use the custom string ID for the form field value 
         document.getElementById('product-id').value = product.id;
         document.getElementById('product-name').value = product.name;
         document.getElementById('product-image').value = product.image;
@@ -352,7 +342,6 @@ async function handleEditProduct(e) {
         document.getElementById('product-price').value = parseFloat(product.price).toFixed(2);
         document.getElementById('product-stock').value = parseInt(product.stock);
         
-        // 3. Display the form
         productFormContainer.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -436,7 +425,6 @@ async function fetchCustomerList() {
         if (response.ok) {
             let html = '<h3>Registered Customers</h3>';
             
-            // Assuming customer list is a direct array or nested under a property like 'users'
             const users = Array.isArray(data) ? data : data.users || data.data || [];
 
             if (users.length === 0) {
@@ -444,7 +432,6 @@ async function fetchCustomerList() {
             } else {
                 html += '<table class="customer-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Actions</th></tr></thead><tbody>';
                 users.forEach(user => {
-                    // Use user._id for customer list as it's the standard MongoDB key
                     html += `
                         <tr>
                             <td>${user._id.slice(-6)}</td>
@@ -458,7 +445,6 @@ async function fetchCustomerList() {
             }
             customerListContainer.innerHTML = html;
             
-            // ⭐ ATTACH DELETE LISTENERS
             document.querySelectorAll('.delete-customer-btn').forEach(button => {
                 button.addEventListener('click', handleDeleteCustomer);
             });
@@ -475,7 +461,6 @@ async function fetchCustomerList() {
 }
 
 
-// ⭐ NEW FUNCTION: Handle Customer Deletion
 async function handleDeleteCustomer(e) {
     const userId = e.target.dataset.id;
     if (!confirm(`Are you sure you want to permanently delete customer ID: ${userId.slice(-6)}? This action cannot be undone.`)) {
@@ -483,7 +468,6 @@ async function handleDeleteCustomer(e) {
     }
 
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-    // Assumes the DELETE API endpoint is CUSTOMER_DELETE_API/:id, which is correct for MongoDB _id
     const url = `${CUSTOMER_DELETE_API}/${userId}`; 
 
     try {
@@ -502,7 +486,6 @@ async function handleDeleteCustomer(e) {
 
         alert(`Customer account '${userId.slice(-6)}' successfully deleted!`);
         
-        // Refresh the customer list table
         await fetchCustomerList(); 
 
     } catch (error) {
@@ -513,7 +496,6 @@ async function handleDeleteCustomer(e) {
 
 // --- Sales Report (NEW) ---
 
-// ⭐ NEW FUNCTION: Fetch and Render Sales Report
 async function fetchSalesReport() {
     if (!salesReportContainer) return;
 
@@ -534,7 +516,6 @@ async function fetchSalesReport() {
         const salesData = await response.json();
 
         if (response.ok) {
-            // Assuming sales data is an array
             if (salesData.length === 0) {
                 salesReportContainer.innerHTML = '<h4>No sales records found yet.</h4>';
                 return;
@@ -573,6 +554,13 @@ async function fetchSalesReport() {
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // ⭐ FIX 3: Initialize productGrid inside DOMContentLoaded for safety
+    if (CURRENT_PAGE_NAME === ADMIN_DASHBOARD_PAGE_NAME) {
+        productGrid = document.getElementById('products-list-container');
+    } else if (CURRENT_PAGE_NAME === STORE_PAGE_NAME || CURRENT_PAGE_NAME === '') {
+        productGrid = document.getElementById('products');
+    }
+    
     const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY);
     const isAdminLoggedIn = !!adminToken; 
 
@@ -594,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // ⭐ ADMIN LOGIN ATTACHMENT (admin-login.html) ⭐
+    // ADMIN LOGIN ATTACHMENT (admin-login.html)
     else if (CURRENT_PAGE_NAME === ADMIN_LOGIN_PAGE_NAME) {
         if (isAdminLoggedIn) {
             window.location.href = getAdminDashboardPath();
@@ -617,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Fetch Admin Data
-        fetchAndRenderProducts(true); // Now uses ADMIN_PRODUCTS_API_URL and token
+        fetchAndRenderProducts(true); 
         fetchCustomerList();
         fetchSalesReport(); 
 
