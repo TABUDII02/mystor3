@@ -11,7 +11,7 @@ const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`;
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
 const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; 
 const PRODUCTS_API_URL = `${API_BASE_URL}/api/products`; 
-// ⭐ FIX: Dedicated API for Admin product listing
+// ⭐ Dedicated API for Admin product listing
 const ADMIN_PRODUCTS_API_URL = `${API_BASE_URL}/api/admin/products`; 
 const SALES_REPORT_API = `${API_BASE_URL}/api/sales/report`; 
 
@@ -32,20 +32,14 @@ const getAuthPagePath = () => `/${AUTH_PAGE_NAME}`;
 const getAdminLoginPagePath = () => `/${ADMIN_LOGIN_PAGE_NAME}`; 
 
 
-// --- DOM References ---
-// ⭐ FIX 1: Removed initial productGrid global assignment to handle timing issues (see below)
-let productGrid = null; // Will be defined during DOMContentLoaded, but is null here.
-
-// These remain global references for non-product areas
+// --- DOM References (Initialized safely in DOMContentLoaded where possible) ---
+let productGrid = null; 
 const productFormContainer = document.getElementById('product-form-container');
 const productForm = document.getElementById('product-form');
 const formTitle = document.getElementById('form-title');
-
 const adminLoginForm = document.getElementById('admin-login-form');
 const loginError = document.getElementById('login-error'); 
-
 const showLoginFormBtn = document.getElementById('show-login-form-btn');
-
 const customerListContainer = document.getElementById('customer-list-container');
 const salesReportContainer = document.getElementById('sales-report-container');
 
@@ -138,6 +132,7 @@ function createProductCardHTML(product, isAdmin = false) {
     const productId = product.id || product._id; 
 
     if (isAdmin) {
+        // Admin mode always shows stock and CRUD buttons
         adminButtonsHTML = `
             <p class="stock-info">Stock: **${stockQuantity}**</p>
             <div class="admin-buttons">
@@ -147,6 +142,7 @@ function createProductCardHTML(product, isAdmin = false) {
         `;
         actionButtonHTML = '<button disabled style="opacity: 0.7;">Add to Cart (Admin)</button>'; 
     } else {
+        // Public mode shows stock status and Add to Cart
         if (isOutOfStock) {
             actionButtonHTML = '<button disabled style="background-color: #f44336; opacity: 1; cursor: default;">Out of Stock</button>';
         } else {
@@ -176,11 +172,10 @@ function createProductCardHTML(product, isAdmin = false) {
     `;
 }
 
-// ⭐ FIX 2: Updated fetchAndRenderProducts to be self-healing and use the correct endpoint/auth
+// Fetches and Renders products using the appropriate API route (public or admin)
 async function fetchAndRenderProducts(isAdmin = false) {
-    let currentProductGrid = productGrid; // Use the global reference if set
+    let currentProductGrid = productGrid; 
 
-    // Safely look up the product grid element here if the global wasn't set earlier
     if (!currentProductGrid) {
         if (isAdmin) {
             currentProductGrid = document.getElementById('products-list-container');
@@ -190,14 +185,13 @@ async function fetchAndRenderProducts(isAdmin = false) {
     }
 
     if (!currentProductGrid) {
-        console.error(`ERROR: Product grid element was not found for page: ${CURRENT_PAGE_NAME}. Check your HTML ID.`);
+        console.error(`ERROR: Product grid element was not found for page: ${CURRENT_PAGE_NAME}.`);
         return; 
     }
 
     currentProductGrid.innerHTML = isAdmin ? '<p>Loading products for Admin Dashboard...</p>' : '<h2>🔥 Top Picks & New Arrivals (Loading...)</h2>';
     currentProductGrid.classList.toggle('admin-mode', isAdmin);
 
-    // ⭐ FIX: Determine URL and Headers based on isAdmin flag ⭐
     let fetchUrl = PRODUCTS_API_URL;
     const fetchHeaders = {};
     
@@ -229,13 +223,12 @@ async function fetchAndRenderProducts(isAdmin = false) {
         
         const data = await response.json(); 
         
-        // ROBUST PRODUCT ARRAY EXTRACTION
         let products = Array.isArray(data) ? data : data.products || data.data || [];
         
         currentProductGrid.innerHTML = isAdmin ? '' : '<h2>🔥 Top Picks & New Arrivals</h2>';
         
         if (products.length === 0) {
-            currentProductGrid.innerHTML += '<p>No products found in the database. Add a new product via the form.</p>';
+            currentProductGrid.innerHTML += '<p>No active products found in the database. Add new products via the form in the dashboard.</p>';
             return;
         }
 
@@ -244,6 +237,7 @@ async function fetchAndRenderProducts(isAdmin = false) {
         });
 
         if (isAdmin) {
+            // Attach Admin CRUD listeners
             document.querySelectorAll('.product-card .edit-btn').forEach(button => {
                 button.addEventListener('click', handleEditProduct);
             });
@@ -251,6 +245,7 @@ async function fetchAndRenderProducts(isAdmin = false) {
                 button.addEventListener('click', handleDeleteProduct); 
             });
         }
+        // NOTE: Add-to-cart listeners (for !isAdmin) are typically handled in a separate `store.js` or global script.
 
     } catch (error) {
         console.error("Failed to load products from API:", error);
@@ -262,7 +257,8 @@ async function handleFormSubmit(e) {
     e.preventDefault();
 
     const formData = new FormData(productForm);
-    const productId = formData.get('id') || undefined; 
+    // Use the hidden 'product-id' field value
+    const productId = document.getElementById('product-id').value || undefined; 
     
     const productData = {
         id: productId, // Send the custom string 'id'
@@ -321,6 +317,7 @@ async function handleEditProduct(e) {
     }
 
     try {
+        // Fetch single product data using the public endpoint (it handles auth for admin)
         const response = await fetch(`${PRODUCTS_API_URL}/${productId}`, {
             method: 'GET',
             headers: {
@@ -335,6 +332,7 @@ async function handleEditProduct(e) {
         }
         
         formTitle.textContent = 'Edit Product';
+        // Populate form fields
         document.getElementById('product-id').value = product.id;
         document.getElementById('product-name').value = product.name;
         document.getElementById('product-image').value = product.image;
@@ -375,7 +373,7 @@ async function handleDeleteProduct(e) {
             throw new Error(data.error || `Server responded with status ${response.status}`);
         }
 
-        alert(`Product '${productId}' successfully moved to trash!`);
+        alert(`Product successfully moved to trash!`);
         
         await fetchAndRenderProducts(true); 
 
@@ -386,7 +384,7 @@ async function handleDeleteProduct(e) {
 }
 
 function setupAddProductForm() {
-    formTitle.textContent = 'Add New';
+    formTitle.textContent = 'Add New Product';
     productForm.reset();
     document.getElementById('product-id').value = '';
     productFormContainer.style.display = 'block';
@@ -399,7 +397,7 @@ function hideProductForm() {
 }
 
 
-// --- Customer Management (UPDATED with Delete functionality) ---
+// --- Customer Management ---
 
 async function fetchCustomerList() {
     if (!customerListContainer) return;
@@ -494,7 +492,7 @@ async function handleDeleteCustomer(e) {
     }
 }
 
-// --- Sales Report (NEW) ---
+// --- Sales Report ---
 
 async function fetchSalesReport() {
     if (!salesReportContainer) return;
@@ -554,7 +552,7 @@ async function fetchSalesReport() {
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // ⭐ FIX 3: Initialize productGrid inside DOMContentLoaded for safety
+    // Initialize productGrid element reference safely
     if (CURRENT_PAGE_NAME === ADMIN_DASHBOARD_PAGE_NAME) {
         productGrid = document.getElementById('products-list-container');
     } else if (CURRENT_PAGE_NAME === STORE_PAGE_NAME || CURRENT_PAGE_NAME === '') {
@@ -566,17 +564,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Store Page Logic (index.html) ---
     if (CURRENT_PAGE_NAME === STORE_PAGE_NAME || CURRENT_PAGE_NAME === '') {
-        fetchAndRenderProducts(false); 
+        fetchAndRenderProducts(false); // Fetch public products
         
         if (showLoginFormBtn) {
-            showLoginFormBtn.href = isAdminLoggedIn ? getAuthPagePath() : getAdminDashboardPath();
-            showLoginFormBtn.textContent = isAdminLoggedIn ? 'Account / Login' : 'Admin Dashboard 🛑';
+            // Adjust link based on auth status
+            showLoginFormBtn.href = isAdminLoggedIn ? getAdminDashboardPath() : getAuthPagePath();
+            showLoginFormBtn.textContent = isAdminLoggedIn ? 'Admin Dashboard' : 'Account / Login';
         }
     } 
     
     // --- Customer Auth Page Logic (auth.html) ---
     else if (CURRENT_PAGE_NAME === AUTH_PAGE_NAME) { 
         if (isAdminLoggedIn) {
+            // Prevent admin from lingering on the public auth page
             window.location.href = getAdminDashboardPath();
             return;
         }
@@ -590,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (adminLoginForm) {
             adminLoginForm.addEventListener('submit', handleAdminLogin);
-            console.log("Admin Login Handler Attached successfully."); 
         }
     }
     
@@ -604,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Fetch Admin Data
+        // Fetch Admin Data for the dashboard
         fetchAndRenderProducts(true); 
         fetchCustomerList();
         fetchSalesReport(); 
