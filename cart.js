@@ -3,6 +3,14 @@ const CART_STORAGE_KEY = 'myStoreShoppingCart';
 // A reference to the cart count element in the header
 const cartIcon = document.querySelector('.nav-cart');
 
+// =========================================================
+// ⭐ NEW: API & AUTH CONFIGURATION
+// =========================================================
+const API_BASE_URL = 'http://localhost:5000'; // Your backend server address
+const CHECKOUT_API_URL = `${API_BASE_URL}/api/sales/checkout`;
+const USER_TOKEN_KEY = 'userToken';       // Key for customer JWT
+const ADMIN_TOKEN_KEY = 'adminAuthToken'; // Key for admin JWT
+
 // --- Utility Functions ---
 
 /**
@@ -132,11 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- Cart Page Specific Logic (assuming these elements exist on cart.html) ---
 
 const cartItemsList = document.querySelector('.cart-items-list');
-const summarySubtotal = document.querySelector('.cart-summary .summary-value:nth-child(2)');
+// Fixed selector based on the provided HTML structure (need to select the element containing the text)
+const summarySubtotal = document.querySelector('.cart-summary .summary-line:nth-child(1) .summary-value'); 
 const shippingCostDisplay = document.querySelector('.summary-line:nth-child(2) .summary-value');
 const taxAmountDisplay = document.querySelector('.summary-line.tax-line .summary-value');
 const summaryTotal = document.querySelector('.cart-summary .total-value');
-const checkoutButton = document.querySelector('.checkout-button'); // Also moved up for broader scope
+const checkoutButton = document.querySelector('.checkout-button'); 
 
 const shippingCost = 7.99; // Fixed shipping cost
 const taxRate = 0.04; // 4% tax rate (example)
@@ -289,34 +298,87 @@ function removeItem(itemId) {
 }
 
 
-// --- Checkout Logic ---
+// =========================================================
+// ⭐ NEW: ASYNCHRONOUS CHECKOUT LOGIC
+// =========================================================
 
 /**
- * Handles the click event for the checkout button.
+ * Handles the checkout process: saves the sales data to the backend,
+ * updates inventory, and clears the client-side cart.
  */
-function handleCheckout() {
-    const cart = getCart();
+async function handleCheckout() {
+    // 1. Get Authentication Token
+    const token = localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY); 
     
-    if (cart.length === 0) {
-        alert("Your cart is empty! Please add items before proceeding to checkout.");
+    if (!token) {
+        alert("🔒 You must be logged in to complete your purchase. Redirecting to login page.");
+        window.location.href = 'auth.html'; 
         return;
     }
 
-    // 1. Log the final order details
-    const finalTotal = document.querySelector('.cart-summary .total-value')?.textContent || 'N/A';
-    console.log("--- ORDER SUMMARY ---");
-    cart.forEach(item => {
-        console.log(`- ${item.name}: ${item.quantity} x $${item.price.toFixed(2)}`);
-    });
-    console.log(`TOTAL DUE: ${finalTotal}`);
+    // 2. Get and validate cart data
+    const cart = getCart();
+    if (cart.length === 0) {
+        alert("Your cart is empty. Please add items to proceed.");
+        return;
+    }
+
+    // Prepare the order items in the format the backend expects
+    const orderItems = cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+    }));
+
+    // 3. User Confirmation and UI Update
+    const finalTotal = summaryTotal?.textContent || '$0.00';
+    if (!confirm(`Confirm purchase for the total amount of ${finalTotal}?`)) {
+        return;
+    }
     
-    // 2. Simulate navigation to a checkout page or payment portal
-    alert(`Proceeding to payment for total amount: ${finalTotal}. (This is a simulation.)`);
-    
-    // 3. Optional: Clear the cart after a successful 'checkout'
-    // saveCart([]); 
-    // updateCartIcon([]);
-    // renderCart();
+    // Disable the button to prevent double-click submissions
+    checkoutButton.disabled = true;
+    checkoutButton.textContent = 'Processing Order... Please Wait';
+
+    try {
+        // 4. Send transaction data to the backend (POST /api/sales/checkout)
+        const response = await fetch(CHECKOUT_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Attach the token for Admin/Customer authorization
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ orderItems }) // Send the array of order items
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Handle HTTP errors or backend validation errors (e.g., stock running out)
+            throw new Error(data.error || `Server responded with status ${response.status}`);
+        }
+
+        // 5. Success: Clear the cart and notify user
+        saveCart([]); // Clear local storage cart
+        
+        alert("✅ Order placed successfully! Your sales data has been recorded and inventory updated.");
+        
+        // Update the UI immediately
+        renderCart(); 
+
+        // Redirect to a confirmation page or home page
+        // window.location.href = '/order-confirmation.html'; 
+
+    } catch (error) {
+        console.error("Checkout Failed:", error);
+        alert(`❌ Checkout failed: ${error.message}. Please review your order.`);
+        
+        // Re-enable button on failure
+        checkoutButton.disabled = false;
+        checkoutButton.textContent = 'Proceed to Checkout';
+    }
 }
 
 // --- Cart Page Initialization ---
@@ -328,6 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCart();
     }
     
+    // Attach the new asynchronous handleCheckout function to the button
     if (checkoutButton) {
         checkoutButton.addEventListener('click', handleCheckout);
     }
