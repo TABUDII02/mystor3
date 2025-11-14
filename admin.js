@@ -6,7 +6,7 @@ const ADMIN_MODE_KEY = 'isAdminMode';
 const ADMIN_TOKEN_KEY = 'adminAuthToken'; 
 
 // Backend API endpoints (UPDATED: Added Sales and Customer Delete API)
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com';
 const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`; 
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
 const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; // Assumes DELETE /api/users/:id
@@ -594,3 +594,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
