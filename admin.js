@@ -6,7 +6,7 @@ const ADMIN_MODE_KEY = 'isAdminMode';
 const ADMIN_TOKEN_KEY = 'adminAuthToken'; 
 
 // Backend API endpoints (UPDATED with your Render URL)
-const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com';
+const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com/api';
 const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`; 
 const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
 const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; 
@@ -627,4 +627,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
 
