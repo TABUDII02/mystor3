@@ -39,7 +39,7 @@ const productForm = document.getElementById('product-form');
 const formTitle = document.getElementById('form-title');
 const adminLoginForm = document.getElementById('admin-login-form');
 const loginError = document.getElementById('login-error'); 
-const showLoginFormBtn = document.getElementById('show-login-form-btn');
+const showLoginFormBtn = document.getElementById('auth-link');
 const customerListContainer = document.getElementById('customer-list-container');
 const salesReportContainer = document.getElementById('sales-report-container');
 
@@ -627,3 +627,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
