@@ -18,58 +18,52 @@
 
 // NOTE: No changes are needed in your admin.js for this feature.
 
-// =========================================================
-// ⭐ AUTH CONSTANTS (MUST be declared globally if used by other files later)
-// =========================================================
-const USER_TOKEN_KEY = 'userToken';       // Key for customer JWT
-const ADMIN_TOKEN_KEY = 'adminAuthToken'; // Key for admin JWT
-
-
-/**
- * Checks for a token in localStorage and updates the UI accordingly.
- */
-function updateAuthLink() {
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Get the navigation link element
+    // Ensure you have added id="auth-link" to your <a> tag in index.html!
     const authLink = document.getElementById('auth-link');
-    if (!authLink) return;
+    
+    // 2. Check for the customer's authentication token
+    const customerToken = localStorage.getItem('authToken'); 
+    
+    if (authLink) {
+        if (customerToken) {
+            // Case 1: CUSTOMER is Logged In
+            
+            // Set the link to 'Logout'
+            authLink.textContent = 'Logout 👋';
+            authLink.href = '#'; // Use a placeholder link when logged in
+            
+            // Attach the click handler for logout
+            authLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleCustomerLogout();
+            });
 
-    // Check if either a user or an admin token exists
-    const userToken = localStorage.getItem(USER_TOKEN_KEY);
-    const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY);
-
-    if (userToken || adminToken) {
-        // User is logged in
-        authLink.textContent = 'Logout 🚪';
-        authLink.href = '#'; // Change the link destination
-        authLink.addEventListener('click', handleLogout);
-        
-    } else {
-        // User is logged out
-        authLink.textContent = 'Account / Login';
-        authLink.href = 'auth.html'; // Default login page
-        // Remove existing listener to prevent duplicate attachment/errors
-        authLink.removeEventListener('click', handleLogout);
+        } else {
+            // Case 2: CUSTOMER is Logged Out
+            
+            // Ensure the link is correct (it points to the login/register page)
+            authLink.textContent = 'Account / Login';
+            authLink.href = 'auth.html';
+            
+            // Note: Since this file runs before admin.js, the admin logic in admin.js
+            // that changes the button for the Admin Dashboard will override this if needed.
+        }
     }
-}
+});
 
 /**
- * Clears the tokens from localStorage and redirects the user.
- * @param {Event} event - The click event object.
+ * Clears the customer's session data and redirects to the store page.
  */
-function handleLogout(event) {
-    event.preventDefault(); // Stop the '#' link from jumping the page
-
-    // 1. Remove both possible tokens
-    localStorage.removeItem(USER_TOKEN_KEY);
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
+function handleCustomerLogout() {
+    // Clear the customer token and name
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userName');
     
-    // 2. Clear Admin Mode flag if used
-    // localStorage.removeItem('isAdminMode');
+    alert('You have been logged out.');
+    
+    // Redirect to the home page to refresh the navigation state
+    window.location.href = 'index.html';
+}        
 
-    // 3. Update the UI and redirect
-    updateAuthLink(); // Immediately changes the link back to "Account / Login"
-    alert("You have been successfully logged out.");
-    window.location.href = 'index.html'; // Redirect to the home page
-}
-
-// Attach the update function to the page load event
-document.addEventListener('DOMContentLoaded', updateAuthLink);
