@@ -9,7 +9,7 @@ const cartIcon = document.querySelector('.nav-cart');
 const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com'; // Your backend server address
 const CHECKOUT_API_URL = `${API_BASE_URL}/api/sales/checkout`;
 const USER_TOKEN_KEY = 'userToken';       // Key for customer JWT
-const ADMIN_TOKEN_KEY = 'adminAuthToken'; // Key for admin JWT
+//const ADMIN_TOKEN_KEY = 'adminAuthToken'; // Key for admin JWT
 
 // --- Utility Functions ---
 
@@ -395,4 +395,5 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutButton.addEventListener('click', handleCheckout);
     }
 });
+
 
