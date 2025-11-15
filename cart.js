@@ -6,7 +6,7 @@ const cartIcon = document.querySelector('.nav-cart');
 // =========================================================
 // ⭐ NEW: API & AUTH CONFIGURATION
 // =========================================================
-const API_BASE_URL = 'http://localhost:5000'; // Your backend server address
+const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com'; // Your backend server address
 const CHECKOUT_API_URL = `${API_BASE_URL}/api/sales/checkout`;
 const USER_TOKEN_KEY = 'userToken';       // Key for customer JWT
 const ADMIN_TOKEN_KEY = 'adminAuthToken'; // Key for admin JWT
@@ -395,3 +395,4 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutButton.addEventListener('click', handleCheckout);
     }
 });
+
