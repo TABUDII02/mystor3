@@ -19,51 +19,43 @@
 // NOTE: No changes are needed in your admin.js for this feature.
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Get the navigation link element
-    // Ensure you have added id="auth-link" to your <a> tag in index.html!
+    // 🛑 IMPORTANT: Define constants LOCALLY to avoid global conflicts 🛑
+    const USER_TOKEN_KEY = 'userToken';
+    const ADMIN_TOKEN_KEY = 'adminAuthToken';
+    
+    // Select the HTML element
     const authLink = document.getElementById('auth-link');
-    
-    // 2. Check for the customer's authentication token
-    const customerToken = localStorage.getItem('authToken'); 
-    
-    if (authLink) {
-        if (customerToken) {
-            // Case 1: CUSTOMER is Logged In
-            
-            // Set the link to 'Logout'
-            authLink.textContent = 'Logout 👋';
-            authLink.href = '#'; // Use a placeholder link when logged in
-            
-            // Attach the click handler for logout
-            authLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                handleCustomerLogout();
-            });
+    if (!authLink) return;
 
-        } else {
-            // Case 2: CUSTOMER is Logged Out
-            
-            // Ensure the link is correct (it points to the login/register page)
-            authLink.textContent = 'Account / Login';
-            authLink.href = 'auth.html';
-            
-            // Note: Since this file runs before admin.js, the admin logic in admin.js
-            // that changes the button for the Admin Dashboard will override this if needed.
-        }
+    /**
+     * Handles the logout process: clears tokens, updates UI, and redirects.
+     */
+    function handleLogout(event) {
+        event.preventDefault(); 
+
+        // 1. Clear tokens from localStorage
+        localStorage.removeItem(USER_TOKEN_KEY);
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        
+        // 2. Alert and redirect
+        alert("You have been successfully logged out.");
+        window.location.href = 'index.html'; 
+    }
+
+    // Check for tokens
+    const userToken = localStorage.getItem(USER_TOKEN_KEY);
+    const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY);
+
+    if (userToken || adminToken) {
+        // User is logged in: Change link to Logout
+        authLink.textContent = 'Logout 🚪';
+        authLink.href = '#'; 
+        
+        // Add the click listener for the logout process
+        authLink.addEventListener('click', handleLogout);
+    } else {
+        // User is logged out: Link remains 'Account / Login' and href remains 'auth.html'
+        // No action needed here, as the HTML is already set correctly.
     }
 });
-
-/**
- * Clears the customer's session data and redirects to the store page.
- */
-function handleCustomerLogout() {
-    // Clear the customer token and name
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userName');
-    
-    alert('You have been logged out.');
-    
-    // Redirect to the home page to refresh the navigation state
-    window.location.href = 'index.html';
-}        
 
