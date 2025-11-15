@@ -173,7 +173,7 @@ function createProductCardHTML(product, isAdmin = false) {
 }
 
 // Fetches and Renders products using the appropriate API route (public or admin)
-async function fetchAndRenderProducts(isAdmin = true) {
+async function fetchAndRenderProducts(isAdmin = false) {
     let currentProductGrid = productGrid; 
 
     if (!currentProductGrid) {
@@ -627,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
 
 
 
