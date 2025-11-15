@@ -7,13 +7,13 @@ const ADMIN_TOKEN_KEY = 'adminAuthToken';
 
 // Backend API endpoints (UPDATED with your Render URL)
 const API_BASE_URL = 'https://mongodb-crud-api-ato3.onrender.com/api';
-const ADMIN_LOGIN_API = `${API_BASE_URL}/api/admin/login`; 
-const CUSTOMER_LIST_API = `${API_BASE_URL}/api/users`; 
-const CUSTOMER_DELETE_API = `${API_BASE_URL}/api/users`; 
-const PRODUCTS_API_URL = `${API_BASE_URL}/api/products`; 
+const ADMIN_LOGIN_API = `${API_BASE_URL}/admin/login`; 
+const CUSTOMER_LIST_API = `${API_BASE_URL}/users`; 
+const CUSTOMER_DELETE_API = `${API_BASE_URL}/users`; 
+const PRODUCTS_API_URL = `${API_BASE_URL}/products`; 
 // ⭐ Dedicated API for Admin product listing
-const ADMIN_PRODUCTS_API_URL = `${API_BASE_URL}/api/admin/products`; 
-const SALES_REPORT_API = `${API_BASE_URL}/api/sales/report`; 
+const ADMIN_PRODUCTS_API_URL = `${API_BASE_URL}/admin/products`; 
+const SALES_REPORT_API = `${API_BASE_URL}/sales/report`; 
 
 
 // Define page paths using ONLY the filename for consistent comparison
@@ -627,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
 
 
 
